@@ -149,7 +149,7 @@ RPM = 1726
 
 # Circuit Diagram
 
-![Circuit Diagram](Photos/Circuit_Diagram.png)
+![Circuit Diagram](Photos/circuit_diagram.jpg)
 
 ---
 
@@ -182,7 +182,7 @@ RPM = 1726
 
 ## Final Device
 
-![OBD Scanner](Photos/OBD-II.png)
+![OBD Scanner](Photos/obd-II_Assembled_Unit.jpg)
 
 ## Bike Connection
 

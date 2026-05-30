@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ESP32 OBD2 Scanner — Project Documentation</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #080c12;
+      --surface: #0e1420;
+      --card: #121a28;
+      --card2: #0f1820;
+      --border: rgba(0,200,255,0.12);
+      --accent: #00c8ff;
+      --accent2: #00ff9d;
+      --accent3: #ff6b35;
+      --warn: #ffb347;
+      --danger: #ff4757;
+      --text: #dde6f5;
+      --muted: #6e80a0;
+      --code-bg: #070b10;
+      --font-mono: 'JetBrains Mono', monospace;
+      --font-head: 'Syne', sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      line-height: 1.75;
+      min-height: 100vh;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,200,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,200,255,0.025) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 0 24px 100px; position: relative; z-index: 1; }
+
+    /* ── HERO ── */
+    .hero {
+      padding: 60px 0 44px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 52px;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(255,107,53,0.1);
+      border: 1px solid rgba(255,107,53,0.3);
+      border-radius: 4px;
+      padding: 4px 12px;
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      color: var(--accent3);
+      text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+    h1 {
+      font-family: var(--font-head);
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 800;
+      line-height: 1.1;
+      color: #fff;
+      margin-bottom: 14px;
+    }
+    h1 .hl { color: var(--accent); }
+    h1 .hl2 { color: var(--accent2); }
+    .hero-desc { color: var(--muted); max-width: 700px; font-size: 0.88rem; line-height: 1.8; margin-bottom: 28px; }
+    .hero-chips { display: flex; flex-wrap: wrap; gap: 10px; }
+    .chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 14px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.03);
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+    }
+    .chip.ok { border-color: rgba(0,255,157,0.3); color: var(--accent2); background: rgba(0,255,157,0.05); }
+    .chip.warn { border-color: rgba(255,179,71,0.3); color: var(--warn); background: rgba(255,179,71,0.05); }
+
+    /* ── SECTION HEADERS ── */
+    h2 {
+      font-family: var(--font-head);
+      font-size: 1.45rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px;
+    }
+    h2 .sec-num {
+      font-size: 0.65rem;
+      color: var(--accent3);
+      background: rgba(255,107,53,0.1);
+      border: 1px solid rgba(255,107,53,0.3);
+      border-radius: 3px;
+      padding: 2px 7px;
+      letter-spacing: 0.1em;
+    }
+    h3 {
+      font-family: var(--font-head);
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--accent2);
+      margin: 28px 0 12px;
+      letter-spacing: 0.04em;
+    }
+    section { margin-bottom: 60px; }
+    p { margin-bottom: 14px; color: var(--text); }
+
+    /* ── CODE ── */
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      overflow-x: auto;
+      margin: 14px 0 20px;
+    }
+    pre code { font-family: var(--font-mono); font-size: 0.8rem; color: #c5daf5; line-height: 1.9; }
+    code {
+      background: rgba(0,200,255,0.08);
+      color: var(--accent);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 0.87em;
+    }
+    pre code { background: transparent; padding: 0; border-radius: 0; color: inherit; }
+    .cm { color: var(--muted); }
+    .kw { color: var(--accent2); }
+    .val { color: var(--warn); }
+    .str { color: #f0a060; }
+
+    /* ── TABLES ── */
+    .table-wrap { overflow-x: auto; margin: 14px 0 20px; border-radius: 8px; border: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; min-width: 440px; }
+    th {
+      background: rgba(0,200,255,0.06);
+      color: var(--accent);
+      padding: 10px 14px;
+      text-align: left;
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+    }
+    td { padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 0.82rem; vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(0,200,255,0.02); }
+
+    /* ── CALLOUTS ── */
+    .callout { border-radius: 6px; padding: 14px 18px; margin: 14px 0; border-left: 3px solid; font-size: 0.84rem; }
+    .callout.info  { background: rgba(0,200,255,0.06);   border-color: var(--accent);  color: #a8d8f0; }
+    .callout.tip   { background: rgba(0,255,157,0.06);   border-color: var(--accent2); color: #90e8c0; }
+    .callout.warn  { background: rgba(255,179,71,0.07);  border-color: var(--warn);    color: #f0c580; }
+    .callout strong { color: #fff; }
+
+    /* ── CIRCUIT DIAGRAM ── */
+    .circuit-svg-wrap {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 28px;
+      margin: 16px 0 20px;
+      overflow-x: auto;
+    }
+
+    /* ── SCREENSHOT GRID ── */
+    .screenshot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin: 20px 0; }
+    .screenshot-slot {
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .screenshot-slot img { width: 100%; display: block; object-fit: cover; border-radius: 10px 10px 0 0; }
+    .screenshot-slot .slot-meta { padding: 12px 14px; }
+    .screenshot-slot .slot-title { font-size: 0.82rem; color: var(--accent); font-family: var(--font-head); font-weight: 700; margin-bottom: 3px; }
+    .screenshot-slot .slot-label { font-size: 0.72rem; color: var(--muted); line-height: 1.4; }
+
+    /* ── VIDEO SLOT ── */
+    .video-slot {
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin: 20px 0;
+      transition: all 0.3s ease;
+    }
+
+    .video-slot:hover {
+      transform: translateY(-4px);
+      box-shadow:
+        0 0 20px rgba(0,200,255,0.15),
+        0 0 40px rgba(0,255,157,0.08);
+    }
+
+    .video-wrapper {
+      padding: 3px;
+      background: linear-gradient(
+        135deg,
+        var(--accent),
+        var(--accent2),
+        var(--accent3)
+      );
+    }
+
+    .video-wrapper video {
+      width: 100%;
+      height: 400px;
+      display: block;
+      background: #000;
+      border-radius: 8px;
+    }
+
+    /* ── JOURNEY TIMELINE ── */
+    .timeline { position: relative; padding-left: 32px; margin: 24px 0; }
+    .timeline::before { content: ''; position: absolute; left: 9px; top: 0; bottom: 0; width: 2px; background: linear-gradient(to bottom, var(--accent), var(--accent2), var(--accent3)); }
+    .tl-item { position: relative; margin-bottom: 32px; }
+    .tl-dot { position: absolute; left: -28px; top: 5px; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg); box-shadow: 0 0 8px var(--accent); }
+    .tl-dot.phase2 { background: var(--accent2); box-shadow: 0 0 8px var(--accent2); }
+    .tl-dot.phase3 { background: var(--accent3); box-shadow: 0 0 8px var(--accent3); }
+    .tl-dot.phase4 { background: var(--warn); box-shadow: 0 0 8px var(--warn); }
+    .tl-title { font-family: var(--font-head); font-weight: 700; color: #fff; font-size: 0.95rem; margin-bottom: 6px; }
+    .tl-body { color: var(--muted); font-size: 0.82rem; line-height: 1.7; }
+    .tl-body strong { color: var(--text); }
+
+    /* ── FLOW DIAGRAM (text-art style) ── */
+    .flow { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin: 14px 0; font-family: var(--font-mono); font-size: 0.78rem; line-height: 1.9; color: #c5daf5; overflow-x: auto; }
+
+    /* ── FEATURE LIST ── */
+    .feature-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin: 16px 0; }
+    .feature-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .feature-card-icon { font-size: 1.4rem; margin-bottom: 8px; }
+    .feature-card-title { font-family: var(--font-head); font-weight: 700; font-size: 0.85rem; color: #fff; margin-bottom: 4px; }
+    .feature-card-desc { font-size: 0.75rem; color: var(--muted); line-height: 1.5; }
+
+    /* ── ANDROID APP SPACE ── */
+    .app-frame {
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin: 20px 0;
+    }
+    .app-mockup-row { display: flex; flex-wrap: wrap; gap: 16px; margin: 16px 0; }
+    .phone-slot {
+      flex: 1;
+      min-width: 160px;
+      max-width: 200px;
+      background: #0a0e18;
+      border: 1px solid rgba(0,255,157,0.2);
+      border-radius: 24px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .phone-slot img { width: 100%; display: block; object-fit: cover; border-radius: 20px; }
+    .phone-slot .phone-meta { padding: 10px 12px; text-align: center; }
+    .phone-slot .phone-label { font-size: 0.7rem; color: var(--muted); }
+    .phone-slot .phone-title { font-size: 0.75rem; color: var(--accent2); font-weight: 700; margin-bottom: 3px; }
+
+    .link-btn {
+        display: inline-block;
+        background: linear-gradient(135deg, #22d3ee, #38bdf8);
+        color: #020617;
+        font-weight: 600;
+        padding: 12px 24px;
+        border-radius: 12px;
+        text-decoration: none;
+        transition: 0.3s;
+        box-shadow: 0 0 15px rgba(34, 211, 238, 0.4);
+        cursor: pointer; /* ensures pointer on hover */
+    }
+
+    .link-btn:hover {
+        transform: translateY(-2px) scale(1.05);
+        box-shadow: 0 0 25px rgba(56, 189, 248, 0.8);
+    }
+
+    /* ── CODE MODE COMPARISON ── */
+    .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+    @media (max-width: 640px) { .compare-grid { grid-template-columns: 1fr; } }
+    .compare-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .compare-head {
+      padding: 12px 16px;
+      font-family: var(--font-head);
+      font-weight: 700;
+      font-size: 0.85rem;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .compare-head.wifi { background: rgba(0,200,255,0.08); color: var(--accent); border-bottom: 1px solid rgba(0,200,255,0.15); }
+    .compare-head.ble  { background: rgba(0,255,157,0.08); color: var(--accent2); border-bottom: 1px solid rgba(0,255,157,0.15); }
+    .compare-body { padding: 16px; }
+    .compare-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 0.78rem; }
+    .compare-row:last-child { border: none; }
+    .cr-label { color: var(--muted); }
+    .cr-val { color: var(--text); }
+
+    /* ── USER GUIDE STEPS ── */
+    .steps { counter-reset: step; }
+    .step-item {
+      display: flex; gap: 16px;
+      margin-bottom: 20px;
+      align-items: flex-start;
+    }
+    .step-num {
+      width: 32px; height: 32px; flex-shrink: 0;
+      border-radius: 50%;
+      background: rgba(0,200,255,0.1);
+      border: 1px solid rgba(0,200,255,0.3);
+      color: var(--accent);
+      font-size: 0.78rem;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      margin-top: 2px;
+    }
+    .step-content h4 { font-family: var(--font-head); font-weight: 700; color: #fff; font-size: 0.88rem; margin-bottom: 4px; }
+    .step-content p { color: var(--muted); font-size: 0.82rem; margin: 0; }
+
+    /* ── FOOTER ── */
+    footer { border-top: 1px solid var(--border); padding: 28px 0; text-align: center; color: var(--muted); font-size: 0.75rem; line-height: 2; }
+    footer span { color: var(--accent); }
+
+    /* ── MISC ── */
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    ul { padding-left: 1.4rem; }
+    li { margin: 5px 0; font-size: 0.85rem; color: var(--text); }
+    .tag { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; }
+    .tag.blue { background: rgba(0,200,255,0.15); color: var(--accent); }
+    .tag.green { background: rgba(0,255,157,0.15); color: var(--accent2); }
+    .tag.orange { background: rgba(255,107,53,0.15); color: var(--accent3); }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-badge">⚡ DIY Project Documentation</div>
+    <h1>ESP32 <span class="hl">OBD2 Scanner</span><br>for <span class="hl2">Bikes &amp; Cars</span></h1>
+    <p class="hero-desc">A custom OBD2 diagnostic device built with an ESP32 and TJA1050 CAN transceiver, serving a real-time live dashboard over Wi-Fi and BLE — including a companion Android app. This documents the full journey from learning CAN Bus to a working product.</p>
+    <div class="hero-chips">
+      <span class="chip ok">✓ Wi-Fi Web Dashboard</span>
+      <span class="chip ok">✓ BLE Notifications</span>
+      <span class="chip ok">✓ Android App</span>
+      <span class="chip ok">✓ CSV Data Recording</span>
+      <span class="chip ok">✓ DTC Read / Clear</span>
+      <span class="chip warn">⚡ ESP32 + TJA1050</span>
+    </div>
+  </div>
+
+<image src="Photos/OBD-II.jpg" alt="ESP32 OBD2 Scanner Photo" style="width:100%;max-width:400px;display:block;margin:0 auto 40px; border-radius:10px; box-shadow: 0 0 20px rgba(0,200,255,0.1), 0 0 40px rgba(0,255,157,0.08);">
+
+  <!-- JOURNEY -->
+  <section id="journey">
+    <h2><span class="sec-num">01</span> The Journey</h2>
+    <p>This project started with curiosity about how CAN Bus works in motorcycles and cars, and ended with a fully custom OBD2 scanner with a web server and Android app. Here's how it unfolded:</p>
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-title">Phase 1 — Learning: ELM327 + Serial Debug</div>
+        <div class="tl-body">Purchased an <strong>ELM327 Mini Bluetooth adapter</strong> and connected it to Windows via Serial Debug Assistant. Sent raw AT commands and OBD2 PIDs manually to understand exactly how the protocol works — what bytes are sent, what bytes come back, how to decode RPM, speed, temperature, and DTCs. Wrote full documentation of everything learned.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot phase2"></div>
+        <div class="tl-title">Phase 2 — Hardware Design: ESP32 + TJA1050</div>
+        <div class="tl-body">Chose the <strong>ESP32</strong> for its built-in Wi-Fi and BLE, and the <strong>TJA1050</strong> CAN transceiver to interface directly with the vehicle CAN Bus (OBD2 pins 6 and 14). Designed and assembled the circuit, wiring CAN TX/RX to GPIO 5/4.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot phase3"></div>
+        <div class="tl-title">Phase 3 — Firmware: Wi-Fi Version</div>
+        <div class="tl-body">Wrote the first firmware — an ESP32 acting as a <strong>Wi-Fi Access Point</strong> with a built-in web server. The dashboard is a single-page HTML app served from <code>PROGMEM</code> with real-time JSON polling, live gauges, DTC read/clear, CSV recording, and VIN reading via ISO-TP multi-frame.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot phase4"></div>
+        <div class="tl-title">Phase 4 — Firmware: BLE Version + Android App</div>
+        <div class="tl-body">Wrote a second firmware where the ESP32 exposes each OBD2 parameter as a <strong>BLE characteristic with NOTIFY support</strong>. Built a companion <strong>Android app</strong> that subscribes to BLE notifications and displays live gauges. The app also allows reading VIN, DTC codes, and clearing faults.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section id="how-it-works">
+    <h2><span class="sec-num">02</span> How It Works</h2>
+    <p>The ESP32 directly reads vehicle sensor data by speaking OBD2 over CAN Bus — no ELM327 chip in between. The TJA1050 handles the physical CAN layer.</p>
+
+    <div class="flow">
+  [Vehicle ECU]
+      │
+      │  CAN Bus (OBD2 Pin 6 = CAN-H, Pin 14 = CAN-L)
+      │  500 kbps, ISO 15765-4 (11-bit IDs)
+      │
+      ▼
+  [TJA1050 Transceiver]
+      │  RX → GPIO 4   TX ← GPIO 5
+      │
+      ▼
+  [ESP32]
+      │  Sends request frame to 0x7DF
+      │  Waits for response from 0x7E8
+      │  Decodes bytes using OBD2 formulas
+      │  Updates value cache every 500ms
+      │
+      ├──▶ [Wi-Fi AP]  ──▶  Browser on phone/laptop
+      │       └─ JSON API /api/data every 1s
+      │       └─ HTML dashboard from PROGMEM
+      │       └─ CSV recording to SPIFFS
+      │
+      └──▶ [BLE Server] ──▶  Android App
+              └─ NOTIFY characteristics per parameter
+              └─ READ-ONLY characteristics for VIN, DTC, ECU
+    </div>
+
+    <h3>OBD2 Request / Response Flow</h3>
+    <pre><code><span class="cm">// ESP32 sends request to broadcast address 0x7DF</span>
+TX CAN Frame (ID=0x7DF):
+  [<span class="val">02</span>] [<span class="val">01</span>] [<span class="val">0C</span>] [00] [00] [00] [00] [00]
+   │     │     └── PID = 0x0C (Engine RPM)
+   │     └──────── Mode = 0x01 (current data)
+   └────────────── 2 bytes of payload follow
+
+<span class="cm">// Vehicle ECU responds from 0x7E8</span>
+RX CAN Frame (ID=0x7E8):
+  [<span class="kw">04</span>] [<span class="kw">41</span>] [<span class="kw">0C</span>] [<span class="kw">1A</span>] [<span class="kw">F8</span>] [00] [00] [00]
+   │     │     │     └──┴── Data bytes A=0x1A, B=0xF8
+   │     │     └──────────── PID echoed back
+   │     └────────────────── 0x40 + mode = positive response
+   └──────────────────────── 4 data bytes follow
+
+<span class="cm">// Decode: RPM = (256 * 0x1A + 0xF8) / 4 = 1726 RPM</span></code></pre>
+  </section>
+
+  <!-- CONNECTION DIAGRAM -->
+  <section id="connection">
+    <h2><span class="sec-num">03</span> Circuit Connection Diagram</h2>
+    <p>The TJA1050 CAN transceiver converts ESP32's 3.3V TTL logic CAN signals to the differential CAN Bus levels required by ISO 11898 / ISO 15765-4.</p>
+
+    <div class="circuit-svg-wrap">
+      <svg viewBox="0 0 900 420" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:900px;display:block;margin:0 auto;font-family:'JetBrains Mono',monospace;">
+        <defs>
+          <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#00c8ff"/>
+          </marker>
+          <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#00ff9d"/>
+          </marker>
+          <marker id="arr3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#ff6b35"/>
+          </marker>
+        </defs>
+
+        <!-- Background blocks -->
+        <!-- OBD2 Connector -->
+        <rect x="10" y="80" width="150" height="250" rx="8" fill="#0a1018" stroke="#ff6b35" stroke-width="1.5"/>
+        <text x="85" y="62" text-anchor="middle" fill="#ff6b35" font-size="11" font-weight="bold">OBD2 CONNECTOR</text>
+        <text x="85" y="76" text-anchor="middle" fill="#6e80a0" font-size="9">16-Pin (in vehicle)</text>
+
+        <!-- OBD2 pins -->
+        <text x="24" y="110" fill="#dde6f5" font-size="9">Pin 4</text><text x="70" y="110" fill="#6e80a0" font-size="9">Chassis GND</text>
+        <text x="24" y="135" fill="#dde6f5" font-size="9">Pin 5</text><text x="70" y="135" fill="#6e80a0" font-size="9">Signal GND</text>
+        <text x="24" y="165" fill="#00c8ff" font-size="9">Pin 6</text><text x="70" y="165" fill="#00c8ff" font-size="9">CAN-H</text>
+        <text x="24" y="195" fill="#00ff9d" font-size="9">Pin 14</text><text x="70" y="195" fill="#00ff9d" font-size="9">CAN-L</text>
+        <text x="24" y="225" fill="#ffb347" font-size="9">Pin 16</text><text x="70" y="225" fill="#ffb347" font-size="9">+12V Battery</text>
+        <!-- dots -->
+        <circle cx="155" cy="165" r="4" fill="#00c8ff"/>
+        <circle cx="155" cy="195" r="4" fill="#00ff9d"/>
+        <circle cx="155" cy="225" r="4" fill="#ffb347"/>
+        <circle cx="155" cy="110" r="4" fill="#6e80a0"/>
+        <circle cx="155" cy="135" r="4" fill="#6e80a0"/>
+
+        <!-- TJA1050 -->
+        <rect x="310" y="110" width="160" height="190" rx="8" fill="#0a1018" stroke="#00c8ff" stroke-width="1.5"/>
+        <text x="390" y="98" text-anchor="middle" fill="#00c8ff" font-size="11" font-weight="bold">TJA1050</text>
+        <text x="390" y="112" text-anchor="middle" fill="#6e80a0" font-size="9">CAN Transceiver</text>
+
+        <text x="326" y="150" fill="#00c8ff" font-size="9">CANH</text>
+        <text x="326" y="175" fill="#00ff9d" font-size="9">CANL</text>
+        <text x="326" y="200" fill="#6e80a0" font-size="9">GND</text>
+        <text x="326" y="225" fill="#ffb347" font-size="9">VCC (5V)</text>
+        <text x="430" y="150" text-anchor="end" fill="#dde6f5" font-size="9">TX</text>
+        <text x="430" y="175" text-anchor="end" fill="#dde6f5" font-size="9">RX</text>
+        <text x="430" y="200" text-anchor="end" fill="#6e80a0" font-size="9">RS (GND)</text>
+        <!-- pin dots left -->
+        <circle cx="312" cy="148" r="3.5" fill="#00c8ff"/>
+        <circle cx="312" cy="173" r="3.5" fill="#00ff9d"/>
+        <circle cx="312" cy="198" r="3.5" fill="#6e80a0"/>
+        <circle cx="312" cy="223" r="3.5" fill="#ffb347"/>
+        <!-- pin dots right -->
+        <circle cx="468" cy="148" r="3.5" fill="#dde6f5"/>
+        <circle cx="468" cy="173" r="3.5" fill="#dde6f5"/>
+        <circle cx="468" cy="198" r="3.5" fill="#6e80a0"/>
+
+        <!-- ESP32 -->
+        <rect x="640" y="80" width="220" height="280" rx="8" fill="#0a1018" stroke="#00ff9d" stroke-width="1.5"/>
+        <text x="750" y="68" text-anchor="middle" fill="#00ff9d" font-size="11" font-weight="bold">ESP32</text>
+        <text x="750" y="82" text-anchor="middle" fill="#6e80a0" font-size="9">38-pin DevKit</text>
+
+        <text x="660" y="120" fill="#dde6f5" font-size="9">GPIO 5 (CAN TX)</text>
+        <text x="660" y="148" fill="#dde6f5" font-size="9">GPIO 4 (CAN RX)</text>
+        <text x="660" y="176" fill="#6e80a0" font-size="9">GND</text>
+        <text x="660" y="204" fill="#ffb347" font-size="9">3.3V → TJA logic</text>
+        <text x="660" y="240" fill="#00c8ff" font-size="9">Wi-Fi (AP mode)</text>
+        <text x="660" y="265" fill="#00ff9d" font-size="9">BLE (GATT server)</text>
+        <text x="660" y="293" fill="#6e80a0" font-size="9">SPIFFS (CSV storage)</text>
+        <text x="660" y="320" fill="#ff6b35" font-size="9">LED → GPIO 17</text>
+
+        <!-- pin dots left -->
+        <circle cx="642" cy="118" r="3.5" fill="#dde6f5"/>
+        <circle cx="642" cy="146" r="3.5" fill="#dde6f5"/>
+        <circle cx="642" cy="174" r="3.5" fill="#6e80a0"/>
+
+        <!-- WIRES: OBD2 → TJA1050 -->
+        <!-- CAN-H -->
+        <line x1="156" y1="165" x2="311" y2="148" stroke="#00c8ff" stroke-width="2" marker-end="url(#arr)"/>
+        <!-- CAN-L -->
+        <line x1="156" y1="195" x2="311" y2="173" stroke="#00ff9d" stroke-width="2" marker-end="url(#arr2)"/>
+        <!-- 12V to power label -->
+        <line x1="156" y1="225" x2="210" y2="225" stroke="#ffb347" stroke-width="1.5"/>
+        <line x1="210" y1="225" x2="210" y2="340" stroke="#ffb347" stroke-width="1.5"/>
+        <text x="215" y="345" fill="#ffb347" font-size="9">→ 5V Regulator → TJA VCC + ESP32 5V</text>
+        <line x1="311" y1="223" x2="240" y2="223" stroke="#ffb347" stroke-width="1.5" stroke-dasharray="4 3"/>
+
+        <!-- GND -->
+        <line x1="156" y1="110" x2="200" y2="110" stroke="#6e80a0" stroke-width="1.5"/>
+        <line x1="200" y1="110" x2="200" y2="370" stroke="#6e80a0" stroke-width="1.5"/>
+        <text x="185" y="385" fill="#6e80a0" font-size="9" text-anchor="middle">Common GND</text>
+        <line x1="311" y1="198" x2="200" y2="198" stroke="#6e80a0" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <line x1="642" y1="174" x2="200" y2="174" stroke="#6e80a0" stroke-width="1.5" stroke-dasharray="4 3"/>
+
+        <!-- WIRES: TJA1050 → ESP32 -->
+        <!-- TX line (TJA TX → ESP32 GPIO 5) -->
+        <line x1="469" y1="148" x2="641" y2="118" stroke="#e8d060" stroke-width="2" marker-end="url(#arr)"/>
+        <text x="555" y="128" fill="#e8d060" font-size="8" text-anchor="middle">TX</text>
+        <!-- RX line (TJA RX ← ESP32 GPIO 4) -->
+        <line x1="641" y1="146" x2="469" y2="173" stroke="#e060a0" stroke-width="2" marker-end="url(#arr)"/>
+        <text x="555" y="168" fill="#e060a0" font-size="8" text-anchor="middle">RX</text>
+
+        <!-- RS pin note -->
+        <text x="469" y="212" fill="#6e80a0" font-size="8">→ GND (normal mode)</text>
+
+        <!-- Labels below -->
+        <text x="85"  y="350" text-anchor="middle" fill="#ff6b35" font-size="9">Vehicle</text>
+        <text x="390" y="320" text-anchor="middle" fill="#00c8ff" font-size="9">Differential ↔ TTL</text>
+        <text x="750" y="380" text-anchor="middle" fill="#00ff9d" font-size="9">Processes + Serves</text>
+      </svg>
+    </div>
+
+    <div class="callout info">
+      <strong>Note on TJA1050 supply:</strong> The TJA1050 VCC requires <strong>5V</strong>. Use the ESP32 DevKit's 5V pin (powered via USB) or a dedicated 5V regulator from the 12V OBD2 supply. The TX/RX signals are 3.3V-compatible on the TJA1050 inputs.
+    </div>
+
+    <h3>Pin Summary</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Connection</th><th>From</th><th>To</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>CAN-H</td><td>OBD2 Pin 6</td><td>TJA1050 CANH</td><td>120Ω termination may be needed if bus is short</td></tr>
+          <tr><td>CAN-L</td><td>OBD2 Pin 14</td><td>TJA1050 CANL</td><td>Differential pair with CAN-H</td></tr>
+          <tr><td>CAN TX</td><td>ESP32 GPIO 5</td><td>TJA1050 TXD</td><td>TTL out from ESP32</td></tr>
+          <tr><td>CAN RX</td><td>ESP32 GPIO 4</td><td>TJA1050 RXD</td><td>TTL in to ESP32</td></tr>
+          <tr><td>RS / S pin</td><td>TJA1050 RS</td><td>GND</td><td>Low = normal mode (not silent/standby)</td></tr>
+          <tr><td>VCC</td><td>5V supply</td><td>TJA1050 VCC</td><td>From OBD2 Pin 16 via regulator or USB 5V</td></tr>
+          <tr><td>GND</td><td>OBD2 Pin 4/5</td><td>TJA1050 GND + ESP32 GND</td><td>Common ground reference</td></tr>
+          <tr><td>LED</td><td>ESP32 GPIO 17</td><td>LED + 220Ω → GND</td><td>Startup blink indicator</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- CIRCUIT BUILD PHOTOS -->
+  <section id="build">
+    <h2><span class="sec-num">04</span> Circuit Build &amp; Making Process</h2>
+    <p>Upload photos of your hardware build below — circuit boards, soldering, wiring, the OBD2 adapter, and the assembled unit.</p>
+
+    <div class="screenshot-grid">
+      <div class="screenshot-slot">
+        <img src="Photos/Components.jpg" alt="Components">
+        <div class="slot-meta">
+          <div class="slot-title">Components</div>
+          <div class="slot-label">ESP32, TJA1050, OBD2 connector, wires laid out</div>
+        </div>
+      </div>
+      <div class="screenshot-slot">
+        <img src="Photos/Circuit_Diagram.png" alt="Connection Diagram">
+        <div class="slot-meta">
+          <div class="slot-title">Connection Diagram</div>
+          <div class="slot-label">Connections between ESP32 and TJA1050</div>
+        </div>
+      </div>
+      <div class="screenshot-slot">
+        <img src="Photos/Physical_Connection.jpg" alt="Wiring / Soldering">
+        <div class="slot-meta">
+          <div class="slot-title">Wiring / Soldering</div>
+          <div class="slot-label">Internal Connection and Assembly</div>
+        </div>
+      </div>
+      <div class="screenshot-slot">
+        <img src="Photos/OBD-II.png" alt="Assembled Unit">
+        <div class="slot-meta">
+          <div class="slot-title">Assembled Unit</div>
+          <div class="slot-label">Final assembled OBD2 scanner device</div>
+        </div>
+      </div>
+      <div class="screenshot-slot">
+        <img src="Photos/OBD-II_Connection_Details.png" alt="Bike OBD2 Connection">
+        <div class="slot-meta">
+          <div class="slot-title">OBD-II Connection Details</div>
+          <div class="slot-label">Details of the connection between the scanner and the bike's OBD2 port</div>
+        </div>
+      </div>
+      <div class="screenshot-slot">
+        <img src="Photos/obd_ii_connect_with_bike.jpg" alt="Bike OBD2 Connection">
+        <div class="slot-meta">
+          <div class="slot-title">Bike OBD2 Connection</div>
+          <div class="slot-label">Connection details between the scanner and the bike's OBD2 port</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WEB DASHBOARD SCREENSHOTS -->
+  <section id="wifi-dashboard">
+    <h2><span class="sec-num">05</span> Wi-Fi Web Dashboard</h2>
+
+    <div class="feature-grid">
+      <div class="feature-card"><div class="feature-card-icon">📡</div><div class="feature-card-title">Access Point Mode</div><div class="feature-card-desc">ESP32 creates its own Wi-Fi hotspot "OBD2-Bike". Connect any device — phone, laptop, tablet.</div></div>
+      <div class="feature-card"><div class="feature-card-icon">📊</div><div class="feature-card-title">Live Gauges</div><div class="feature-card-desc">16 real-time parameters updated every second. Select which ones to display from Settings.</div></div>
+      <div class="feature-card"><div class="feature-card-icon">🔴</div><div class="feature-card-title">DTC Read / Clear</div><div class="feature-card-desc">Read stored fault codes with descriptions from an on-device JSON database. Clear with one tap.</div></div>
+      <div class="feature-card"><div class="feature-card-icon">💾</div><div class="feature-card-title">CSV Recording</div><div class="feature-card-desc">Record live data to SPIFFS as a CSV file, then download it directly from the browser.</div></div>
+      <div class="feature-card"><div class="feature-card-icon">⌨️</div><div class="feature-card-title">Raw Command Mode</div><div class="feature-card-desc">Send any hex OBD2 command directly and see raw bytes + decoded result.</div></div>
+      <div class="feature-card"><div class="feature-card-icon">🔑</div><div class="feature-card-title">VIN + ECU Name</div><div class="feature-card-desc">Read Vehicle Identification Number and ECU name via ISO-TP multi-frame protocol.</div></div>
+    </div>
+
+    <h3>How to Connect (Wi-Fi Mode)</h3>
+    <div class="steps">
+      <div class="step-item"><div class="step-num">1</div><div class="step-content"><h4>Plug in the scanner</h4><p>Connect the ESP32 scanner to the vehicle OBD2 port. Power LEDs will blink 5 times on startup.</p></div></div>
+      <div class="step-item"><div class="step-num">2</div><div class="step-content"><h4>Connect to Wi-Fi</h4><p>On your phone or laptop, connect to <code>OBD2-Bike</code> (password: <code>12345678</code>).</p></div></div>
+      <div class="step-item"><div class="step-num">3</div><div class="step-content"><h4>Open the browser</h4><p>Navigate to <code>http://192.168.4.1</code> or <code>http://obd.local</code> — a captive portal will redirect you automatically.</p></div></div>
+      <div class="step-item"><div class="step-num">4</div><div class="step-content"><h4>Select parameters</h4><p>Go to the Settings tab, choose which parameters to monitor, and tap Save. Your selection persists in EEPROM across power cycles.</p></div></div>
+      <div class="step-item"><div class="step-num">5</div><div class="step-content"><h4>View live data</h4><p>The DASH tab shows live gauges. Values update every second. "ERR" means that PID didn't respond (not supported by your vehicle's ECU).</p></div></div>
+    </div>
+
+    <h3>Dashboard Screenshots</h3>
+    <div class="screenshot-grid">
+      <div class="screenshot-slot">
+        <img src="Photos/screenshot/dash.jpeg" height="500px" alt="DASH Tab — Live Gauges">
+        <div class="slot-meta">
+          <div class="slot-title">DASH Tab — Live Gauges</div>
+          <div class="slot-label">Real-time RPM, speed, temp, throttle gauges</div>
+        </div>
+      </div>
+      <div class="screenshot-slot">
+        <img src="Photos/screenshot/settings.jpeg" height="500px" alt="Settings Tab">
+        <div class="slot-meta">
+          <div class="slot-title">Settings Tab</div>
+          <div class="slot-label">Parameter subscription checkboxes</div>
+        </div>
+      </div>
+      <div class="screenshot-slot">
+        <img src="Photos/screenshot/tools.jpeg" height="500px" alt="TOOLS Tab — DTCs">
+        <div class="slot-meta">
+          <div class="slot-title">TOOLS Tab — DTCs</div>
+          <div class="slot-label">DTC read result with fault descriptions</div>
+        </div>
+      </div>
+      <div class="screenshot-slot">
+        <img src="Photos/screenshot/recording.jpeg" height="500px" alt="RECORD Tab">
+        <div class="slot-meta">
+          <div class="slot-title">RECORD Tab</div>
+          <div class="slot-label">Recording in progress, CSV preview, download</div>
+        </div>
+      </div>
+      <div class="screenshot-slot">
+        <img src="Photos/screenshot/raw_cmd.jpeg" height="500px" alt="RAW CMD Tab">
+        <div class="slot-meta">
+          <div class="slot-title">RAW CMD Tab</div>
+          <div class="slot-label">Custom hex command and decoded response</div>
+        </div>
+      </div>
+      <div class="screenshot-slot video-slot">
+      <div class="video-wrapper">
+        <video
+          controls
+          preload="metadata"
+          poster="Photos/video_thumbnail.png">
+          <source src="https://youtube.com/shorts/QEk9EGT3YsI" type="video/mp4">
+        </video>
+      </div>
+
+      <div class="slot-meta">
+        <div class="slot-title">🎥 Live Dashboard Video Demo</div>
+        <div class="slot-label">
+          Real-time demonstration of RPM, Speed, Temperature,
+          DTC reading, recording, and dashboard functionality.
+    </div>
+  </div>
+
+</div>
+    </div>
+  </section>
+
+  <!-- OBD PARAMETERS -->
+  <section id="parameters">
+    <h2><span class="sec-num">08</span> Supported OBD2 Parameters</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Parameter</th><th>PID</th><th>Formula</th><th>Unit</th></tr></thead>
+        <tbody>
+          <tr><td>0</td><td>Engine RPM</td><td><code>0x0C</code></td><td>(256A + B) / 4</td><td>RPM</td></tr>
+          <tr><td>1</td><td>Vehicle Speed</td><td><code>0x0D</code></td><td>A</td><td>km/h</td></tr>
+          <tr><td>2</td><td>Coolant Temp</td><td><code>0x05</code></td><td>A − 40</td><td>°C</td></tr>
+          <tr><td>3</td><td>Intake Air Temp</td><td><code>0x0F</code></td><td>A − 40</td><td>°C</td></tr>
+          <tr><td>4</td><td>Throttle Position</td><td><code>0x11</code></td><td>A × 100 / 255</td><td>%</td></tr>
+          <tr><td>5</td><td>Engine Runtime</td><td><code>0x1F</code></td><td>(A × 256) + B</td><td>s</td></tr>
+          <tr><td>6</td><td>Battery Voltage</td><td><code>0x42</code></td><td>(A × 256 + B) / 1000</td><td>V</td></tr>
+          <tr><td>7</td><td>Ambient Temp</td><td><code>0x46</code></td><td>A − 40</td><td>°C</td></tr>
+          <tr><td>8</td><td>Engine Load</td><td><code>0x04</code></td><td>A × 100 / 255</td><td>%</td></tr>
+          <tr><td>9</td><td>MAP Pressure</td><td><code>0x0B</code></td><td>A</td><td>kPa</td></tr>
+          <tr><td>10</td><td>O2 Sensor Voltage</td><td><code>0x14</code></td><td>A × 0.005</td><td>V</td></tr>
+          <tr><td>11</td><td>Fuel Pressure</td><td><code>0x0A</code></td><td>A × 3</td><td>kPa</td></tr>
+          <tr><td>12</td><td>Short-term Fuel Trim B1</td><td><code>0x06</code></td><td>(A/128 − 1) × 100</td><td>%</td></tr>
+          <tr><td>13</td><td>Long-term Fuel Trim B1</td><td><code>0x07</code></td><td>(A/128 − 1) × 100</td><td>%</td></tr>
+          <tr><td>14</td><td>Ignition Advance</td><td><code>0x0E</code></td><td>A/2 − 64</td><td>° BTDC</td></tr>
+          <tr><td>15</td><td>Oil Temperature</td><td><code>0x5C</code></td><td>A − 40</td><td>°C</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout warn">Not all vehicles support all PIDs. The firmware gracefully marks unsupported parameters as "error" rather than crashing. Use PID <code>0100</code> to see what your ECU actually supports.</div>
+  </section>
+
+<h2>🌐 ELM327 OBD-II DIAGNOSTIC TOOL</h2>
+
+<!-- Clickable Button Link -->
+<a href="obd2_guide.html" class="link-btn">
+    🔗 ELM327 AT Command Mode
+</a>
+
+</body>
+</html>

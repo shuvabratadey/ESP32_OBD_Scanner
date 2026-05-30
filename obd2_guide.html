@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OBD2 ELM327 — AT Command Guide</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #080c12;
+      --surface: #0e1420;
+      --card: #121a28;
+      --border: rgba(0,200,255,0.12);
+      --accent: #00c8ff;
+      --accent2: #00ff9d;
+      --warn: #ffb347;
+      --danger: #ff4757;
+      --text: #dde6f5;
+      --muted: #6e80a0;
+      --code-bg: #070b10;
+      --font-mono: 'JetBrains Mono', monospace;
+      --font-head: 'Syne', sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 0.92rem;
+      line-height: 1.75;
+      min-height: 100vh;
+    }
+
+    /* ── GRID LINES BACKGROUND ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,200,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,200,255,0.03) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px 100px; position: relative; z-index: 1; }
+
+    /* ── HERO ── */
+    .hero {
+      padding: 64px 0 40px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 48px;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0,200,255,0.08);
+      border: 1px solid rgba(0,200,255,0.25);
+      border-radius: 4px;
+      padding: 4px 12px;
+      font-size: 0.72rem;
+      letter-spacing: 0.15em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+    .hero-badge::before { content: '▶'; font-size: 0.6rem; }
+    h1 {
+      font-family: var(--font-head);
+      font-size: clamp(2rem, 5vw, 3.4rem);
+      font-weight: 800;
+      line-height: 1.1;
+      color: #fff;
+      margin-bottom: 16px;
+    }
+    h1 span { color: var(--accent); }
+    .hero-sub {
+      color: var(--muted);
+      font-size: 0.85rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    .hero-sub span { display: flex; align-items: center; gap: 6px; }
+    .hero-sub span::before { content: '●'; color: var(--accent2); font-size: 0.5rem; }
+
+    /* ── TOC ── */
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 8px 8px 0;
+      padding: 20px 24px;
+      margin-bottom: 48px;
+    }
+    .toc-title {
+      font-family: var(--font-head);
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+    .toc ol { padding-left: 1.2rem; }
+    .toc li { margin: 4px 0; }
+    .toc a { color: var(--muted); text-decoration: none; font-size: 0.82rem; transition: color 0.2s; }
+    .toc a:hover { color: var(--accent); }
+
+    /* ── SECTIONS ── */
+    section { margin-bottom: 56px; }
+    h2 {
+      font-family: var(--font-head);
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    h2 .sec-num {
+      font-size: 0.65rem;
+      color: var(--accent);
+      background: rgba(0,200,255,0.1);
+      border: 1px solid rgba(0,200,255,0.25);
+      border-radius: 3px;
+      padding: 2px 7px;
+      letter-spacing: 0.1em;
+    }
+    h3 {
+      font-family: var(--font-head);
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--accent2);
+      margin: 24px 0 12px;
+      letter-spacing: 0.04em;
+    }
+    p { color: var(--text); margin-bottom: 14px; }
+
+    /* ── CALLOUTS ── */
+    .callout {
+      border-radius: 6px;
+      padding: 14px 18px;
+      margin: 16px 0;
+      border-left: 3px solid;
+      font-size: 0.85rem;
+    }
+    .callout.warn  { background: rgba(255,179,71,0.07);  border-color: var(--warn);   color: #f0c580; }
+    .callout.info  { background: rgba(0,200,255,0.07);   border-color: var(--accent);  color: #a0d8ef; }
+    .callout.tip   { background: rgba(0,255,157,0.07);   border-color: var(--accent2); color: #90e8c0; }
+    .callout.danger{ background: rgba(255,71,87,0.07);   border-color: var(--danger);  color: #f09090; }
+    .callout strong { color: #fff; }
+
+    /* ── CODE BLOCKS ── */
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      overflow-x: auto;
+      margin: 14px 0 20px;
+      position: relative;
+    }
+    pre code { font-family: var(--font-mono); font-size: 0.82rem; color: #c5daf5; line-height: 1.9; }
+    code {
+      background: rgba(0,200,255,0.08);
+      color: var(--accent);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 0.88em;
+    }
+    pre code { background: transparent; padding: 0; border-radius: 0; color: inherit; }
+
+    /* Comment lines in code */
+    .cm { color: var(--muted); }
+    .kw { color: var(--accent2); }
+    .val { color: var(--warn); }
+    .resp { color: #a0e8a0; }
+
+    /* ── TABLES ── */
+    .table-wrap { overflow-x: auto; margin: 14px 0 20px; border-radius: 8px; border: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; min-width: 500px; }
+    th {
+      background: rgba(0,200,255,0.07);
+      color: var(--accent);
+      padding: 10px 14px;
+      text-align: left;
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 10px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      font-size: 0.83rem;
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(0,200,255,0.03); }
+    td code { font-size: 0.82em; }
+
+    /* ── PHASE STEPS ── */
+    .phase {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+    .phase-header {
+      background: rgba(0,200,255,0.06);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .phase-num {
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #000;
+      font-weight: 700;
+      font-size: 0.75rem;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .phase-title { font-family: var(--font-head); font-weight: 700; font-size: 0.9rem; color: #fff; }
+    .phase-body { padding: 16px 20px; }
+
+    /* ── CMD STEP ── */
+    .cmd-step { margin-bottom: 20px; }
+    .cmd-step-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
+
+    /* ── QUICK REF CARD ── */
+    .qref {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 24px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+    }
+    @media (max-width: 600px) { .qref { grid-template-columns: 1fr; } }
+    .qref-col { padding: 0 16px; }
+    .qref-col:first-child { border-right: 1px solid var(--border); padding-left: 0; }
+    .qref-col:last-child { padding-right: 0; }
+    .qref-title { font-size: 0.65rem; letter-spacing: 0.15em; color: var(--accent); text-transform: uppercase; margin-bottom: 12px; }
+    .qref-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 0.8rem; }
+    .qref-row:last-child { border: none; }
+    .qref-cmd { color: var(--accent2); font-family: var(--font-mono); }
+    .qref-desc { color: var(--muted); text-align: right; font-size: 0.75rem; }
+
+    /* ── LINK BUTTONS ── */
+    .btn-row { display: flex; flex-wrap: wrap; gap: 12px; margin: 20px 0; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-decoration: none;
+      letter-spacing: 0.05em;
+      transition: all 0.2s;
+    }
+    .btn-primary { background: var(--accent); color: #000; }
+    .btn-primary:hover { background: #40d8ff; box-shadow: 0 0 20px rgba(0,200,255,0.4); }
+    .btn-danger { background: rgba(255,71,87,0.15); color: var(--danger); border: 1px solid rgba(255,71,87,0.3); }
+    .btn-danger:hover { background: rgba(255,71,87,0.25); }
+    .btn-info { background: rgba(0,200,255,0.1); color: var(--accent); border: 1px solid rgba(0,200,255,0.25); }
+    .btn-info:hover { background: rgba(0,200,255,0.2); }
+
+    /* ── DECODE BOX ── */
+    .decode-box {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      margin: 14px 0;
+    }
+    .decode-row { display: flex; align-items: flex-start; gap: 10px; margin: 6px 0; font-size: 0.82rem; }
+    .decode-byte { color: var(--warn); font-family: var(--font-mono); min-width: 42px; }
+    .decode-arrow { color: var(--muted); }
+    .decode-desc { color: var(--text); }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 28px 0;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.75rem;
+      line-height: 2;
+    }
+    footer span { color: var(--accent); }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-badge">OBD2 Serial Debug Reference</div>
+    <h1>ELM327 <span>AT Command</span><br>Complete Guide</h1>
+    <div class="hero-sub">
+      <span>Device: ELM327 Mini Bluetooth</span>
+      <span>Interface: Windows Serial Debug Assistant</span>
+      <span>Standard: SAE J1979 / ISO 15765</span>
+    </div>
+  </div>
+
+  <!-- TOC -->
+  <div class="toc">
+    <div class="toc-title">// Table of Contents</div>
+    <ol>
+      <li><a href="#what-is-obd2">What is OBD2?</a></li>
+      <li><a href="#elm327-hardware">ELM327 Mini — Hardware Overview</a></li>
+      <li><a href="#can-bus">CAN Bus Protocol Explained</a></li>
+      <li><a href="#at-commands">All AT Commands Reference</a></li>
+      <li><a href="#setup">Setting Up Serial Debug Assistant</a></li>
+      <li><a href="#debug-guide">Step-by-Step Debugging Guide</a></li>
+      <li><a href="#pid-commands">OBD2 PID Commands</a></li>
+      <li><a href="#decoding">Decoding Responses</a></li>
+      <li><a href="#master-sequence">Master Debug Sequence</a></li>
+      <li><a href="#troubleshooting">Troubleshooting</a></li>
+    </ol>
+  </div>
+
+  <!-- SECTION 1 -->
+  <section id="what-is-obd2">
+    <h2><span class="sec-num">01</span> What is OBD2?</h2>
+    <p><strong>OBD2</strong> (On-Board Diagnostics, Version 2) is a standardized system built into all cars (1996+) and most motorcycles (2003+) that exposes the vehicle's internal sensors, ECU data, and diagnostic trouble codes (DTCs) through a standard 16-pin connector.</p>
+    <p>The <strong>ELM327</strong> chip acts as a <em>translator</em> between the vehicle's proprietary protocol (CAN, ISO, VPW, PWM) and a simple human-readable AT command interface over Bluetooth serial.</p>
+    <pre><code>[Your Laptop] <span class="cm">←─ Bluetooth Serial ─→</span> [ELM327 Mini] <span class="cm">←─ OBD2 Wire ─→</span> [Vehicle ECU]</code></pre>
+
+    <div class="callout warn">
+      <strong>⚠ Clone Warning:</strong> Most "Mini" ELM327 adapters sold cheaply are clones of the original chip. They work for basic OBD2 reading but may report firmware version incorrectly, have limited AT command support, fail on some advanced CAN protocols, or drop connections intermittently.
+    </div>
+  </section>
+
+  <!-- SECTION 2 -->
+  <section id="elm327-hardware">
+    <h2><span class="sec-num">02</span> ELM327 Mini — Hardware Overview</h2>
+    <pre><code>┌──────────────────────────────────────────────┐
+│          ELM327 Mini Bluetooth OBD2          │
+│                                              │
+│  ┌──────────┐   ┌──────────┐                 │
+│  │ ELM327   │   │Bluetooth │                 │
+│  │  Chip    │───│  Module  │    LED Indicators
+│  │ (Parser) │   │ HC-05/06 │    🔴 Power
+│  └──────────┘   └──────────┘    🟢 Connected
+│       │                         🔵 Activity
+│  ┌────┴──────────────────────────────────┐   │
+│  │  OBD2 16-Pin Connector                │   │
+│  │  Pin 4:  Chassis Ground               │   │
+│  │  Pin 5:  Signal Ground                │   │
+│  │  Pin 6:  CAN High (ISO 15765-4)       │   │
+│  │  Pin 7:  K-Line (ISO 9141-2)          │   │
+│  │  Pin 14: CAN Low (ISO 15765-4)        │   │
+│  │  Pin 16: Battery (+12V)               │   │
+│  └───────────────────────────────────────┘   │
+└──────────────────────────────────────────────┘</code></pre>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Property</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>Chip</td><td>ELM327 v1.5 / v2.1 (clone)</td></tr>
+          <tr><td>Bluetooth</td><td>SPP (Serial Port Profile)</td></tr>
+          <tr><td>Default Baud Rate</td><td><code>38400 bps</code></td></tr>
+          <tr><td>Voltage Input</td><td>12V from OBD2 Pin 16</td></tr>
+          <tr><td>Protocols Supported</td><td>All 5 OBD2 protocols</td></tr>
+          <tr><td>Pairing PIN</td><td><code>1234</code> or <code>0000</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- SECTION 3 -->
+  <section id="can-bus">
+    <h2><span class="sec-num">03</span> CAN Bus Protocol Explained</h2>
+    <p>CAN (Controller Area Network) is the most common modern vehicle protocol. Understanding it helps decode raw OBD2 responses.</p>
+
+    <h3>CAN Frame Structure</h3>
+    <pre><code>┌────────┬──────────┬──────┬───────────────────────┬─────┐
+│  SOF   │  CAN ID  │  DLC │        Data           │ CRC │
+│ 1 bit  │ 11 bits  │ 4bit │   Up to 8 bytes       │     │
+└────────┴──────────┴──────┴───────────────────────┴─────┘</code></pre>
+
+    <h3>OBD2 CAN IDs (Standard 11-bit)</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>CAN ID</th><th>Direction</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>0x7DF</code></td><td>Tester → ECU</td><td>Functional broadcast (all ECUs listen)</td></tr>
+          <tr><td><code>0x7E0</code></td><td>Tester → ECU 1</td><td>Physical address to Engine ECU</td></tr>
+          <tr><td><code>0x7E8</code></td><td>ECU 1 → Tester</td><td>Response from Engine ECU</td></tr>
+          <tr><td><code>0x7E1</code></td><td>Tester → ECU 2</td><td>Transmission ECU</td></tr>
+          <tr><td><code>0x7E9</code></td><td>ECU 2 → Tester</td><td>Response from Transmission ECU</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>OBD2 CAN Message Example — Send <code>010D</code> (Vehicle Speed)</h3>
+    <pre><code><span class="cm">// REQUEST  (Tester → ECU via 0x7DF)</span>
+Byte 0: <span class="val">02</span>           <span class="cm">= 2 data bytes follow</span>
+Byte 1: <span class="val">01</span>           <span class="cm">= Mode 01 (current data)</span>
+Byte 2: <span class="val">0D</span>           <span class="cm">= PID 0x0D (vehicle speed)</span>
+Bytes 3-7: <span class="val">00 00 00 00 00</span>  <span class="cm">(padding)</span>
+
+<span class="cm">// RESPONSE (ECU → Tester via 0x7E8)</span>
+Byte 0: <span class="resp">03</span>           <span class="cm">= 3 data bytes follow</span>
+Byte 1: <span class="resp">41</span>           <span class="cm">= 0x40 + Mode (0x01) = positive response</span>
+Byte 2: <span class="resp">0D</span>           <span class="cm">= PID echoed back</span>
+Byte 3: <span class="resp">XX</span>           <span class="cm">= Actual speed value in km/h</span></code></pre>
+  </section>
+
+  <!-- SECTION 4 -->
+  <section id="at-commands">
+    <h2><span class="sec-num">04</span> All AT Commands Reference</h2>
+    <p>AT Commands are sent <strong>directly to the ELM327 chip</strong> — not to the vehicle. They configure the adapter's behavior.</p>
+
+    <h3>General / Reset Commands</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Command</th><th>Description</th><th>Example Response</th></tr></thead>
+        <tbody>
+          <tr><td><code>ATZ</code></td><td>Reset all settings to default</td><td><code>ELM327 v1.5</code></td></tr>
+          <tr><td><code>ATD</code></td><td>Set all to defaults (keeps baud rate)</td><td><code>OK</code></td></tr>
+          <tr><td><code>ATWS</code></td><td>Warm start (like ATZ but faster)</td><td><code>ELM327 v1.5</code></td></tr>
+          <tr><td><code>ATI</code></td><td>Print version ID</td><td><code>ELM327 v1.5</code></td></tr>
+          <tr><td><code>AT@1</code></td><td>Display device description</td><td><code>OBDII to RS232 Interpreter</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Echo and Output Formatting</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Command</th><th>Description</th><th>Default</th></tr></thead>
+        <tbody>
+          <tr><td><code>ATE0</code></td><td>Echo OFF — recommended for clean output</td><td>Echo ON</td></tr>
+          <tr><td><code>ATE1</code></td><td>Echo ON</td><td>—</td></tr>
+          <tr><td><code>ATL0</code></td><td>Linefeeds OFF</td><td>—</td></tr>
+          <tr><td><code>ATH0</code></td><td>Headers OFF — hide CAN IDs</td><td>Headers OFF</td></tr>
+          <tr><td><code>ATH1</code></td><td>Headers ON — show CAN IDs</td><td>—</td></tr>
+          <tr><td><code>ATS0</code></td><td>Spaces OFF in response bytes</td><td>Spaces ON</td></tr>
+          <tr><td><code>ATS1</code></td><td>Spaces ON between response bytes</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Timing Commands</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Command</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>ATAT0</code></td><td>Adaptive timing OFF</td></tr>
+          <tr><td><code>ATAT1</code></td><td>Adaptive timing ON — recommended</td></tr>
+          <tr><td><code>ATAT2</code></td><td>Aggressive adaptive timing</td></tr>
+          <tr><td><code>ATST FF</code></td><td>Set timeout to 1020ms (FF × 4ms)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Protocol Commands</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Command</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>ATSP0</code></td><td>Auto-detect protocol — always try this first</td></tr>
+          <tr><td><code>ATSP1</code></td><td>SAE J1850 PWM — Ford (1996–2007)</td></tr>
+          <tr><td><code>ATSP2</code></td><td>SAE J1850 VPW — GM / Chrysler</td></tr>
+          <tr><td><code>ATSP3</code></td><td>ISO 9141-2 — European / Asian older vehicles</td></tr>
+          <tr><td><code>ATSP4</code></td><td>ISO 14230-4 KWP (5-baud init)</td></tr>
+          <tr><td><code>ATSP5</code></td><td>ISO 14230-4 KWP (fast init)</td></tr>
+          <tr><td><code>ATSP6</code></td><td>ISO 15765-4 CAN 11-bit 500K — <strong>most modern cars</strong></td></tr>
+          <tr><td><code>ATSP7</code></td><td>ISO 15765-4 CAN 29-bit 500K</td></tr>
+          <tr><td><code>ATSP8</code></td><td>ISO 15765-4 CAN 11-bit 250K</td></tr>
+          <tr><td><code>ATSP9</code></td><td>ISO 15765-4 CAN 29-bit 250K</td></tr>
+          <tr><td><code>ATDP</code></td><td>Describe current protocol (text)</td></tr>
+          <tr><td><code>ATDPN</code></td><td>Describe protocol by number</td></tr>
+          <tr><td><code>ATPC</code></td><td>Protocol close</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Advanced / Monitoring Commands</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Command</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>ATMA</code></td><td>Monitor all messages on bus</td></tr>
+          <tr><td><code>ATRV</code></td><td>Read battery voltage</td></tr>
+          <tr><td><code>ATIGN</code></td><td>Read ignition voltage</td></tr>
+          <tr><td><code>ATCSM1</code></td><td>CAN silent monitoring ON</td></tr>
+          <tr><td><code>ATPPS</code></td><td>Print all programmable parameters</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- SECTION 5 -->
+  <section id="setup">
+    <h2><span class="sec-num">05</span> Setting Up Serial Debug Assistant</h2>
+
+    <h3>Step 1 — Pair the ELM327 via Bluetooth</h3>
+    <ol style="padding-left:1.4rem; color: var(--text); font-size:0.88rem; line-height:2;">
+      <li>Plug the ELM327 Mini into the vehicle OBD2 port (ignition ON)</li>
+      <li>Red LED on adapter should illuminate</li>
+      <li>Windows: <strong>Settings → Bluetooth &amp; devices → Add device</strong></li>
+      <li>Look for <code>OBDII</code>, <code>ELM327</code>, or <code>V-LINK</code></li>
+      <li>Enter pairing PIN: <code>1234</code> (or try <code>0000</code>)</li>
+      <li>A virtual COM port is created — note it (e.g., COM4, COM5)</li>
+    </ol>
+
+    <h3>Step 2 — Find the COM Port</h3>
+    <pre><code>Right-click Start → Device Manager → Ports (COM & LPT)
+
+  Standard Serial over Bluetooth link (COM4)   <span class="cm">← Use this (outgoing)</span>
+  Standard Serial over Bluetooth link (COM5)   <span class="cm">← Incoming (ignore)</span></code></pre>
+
+    <h3>Step 3 — Serial Debug Assistant Settings</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Setting</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>COM Port</td><td>Your COM port (e.g., COM4)</td></tr>
+          <tr><td>Baud Rate</td><td><code>38400</code></td></tr>
+          <tr><td>Data Bits</td><td><code>8</code></td></tr>
+          <tr><td>Parity</td><td><code>None</code></td></tr>
+          <tr><td>Stop Bits</td><td><code>1</code></td></tr>
+          <tr><td>Flow Control</td><td><code>None</code></td></tr>
+          <tr><td>Send Format</td><td>ASCII Text</td></tr>
+          <tr><td>Line Ending</td><td><code>\r</code> (Carriage Return only)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout danger">
+      <strong>Critical:</strong> ELM327 uses <strong>Carriage Return <code>\r</code></strong> as command terminator — NOT newline <code>\n</code>. Ensure your Serial Debug Assistant appends only <code>\r</code> to each sent command.
+    </div>
+  </section>
+
+  <!-- SECTION 6 -->
+  <section id="debug-guide">
+    <h2><span class="sec-num">06</span> Step-by-Step Debugging Guide</h2>
+
+    <div class="phase">
+      <div class="phase-header"><div class="phase-num">1</div><div class="phase-title">Connection &amp; Reset</div></div>
+      <div class="phase-body">
+        <div class="cmd-step">
+          <div class="cmd-step-label">Command 1 — Reset ELM327</div>
+          <pre><code><span class="kw">Send:</span>    <span class="val">ATZ</span>
+<span class="kw">Receive:</span> <span class="resp">ELM327 v1.5
+         ></span></code></pre>
+          <p style="font-size:0.82rem;color:var(--muted);">The <code>&gt;</code> prompt means ELM327 is ready.</p>
+        </div>
+        <div class="cmd-step">
+          <div class="cmd-step-label">Command 2 — Echo OFF</div>
+          <pre><code><span class="kw">Send:</span>    <span class="val">ATE0</span>
+<span class="kw">Receive:</span> <span class="resp">OK</span></code></pre>
+        </div>
+        <div class="cmd-step">
+          <div class="cmd-step-label">Command 3 — Headers ON</div>
+          <pre><code><span class="kw">Send:</span>    <span class="val">ATH1</span>
+<span class="kw">Receive:</span> <span class="resp">OK</span></code></pre>
+        </div>
+        <div class="cmd-step">
+          <div class="cmd-step-label">Command 4 — Adaptive Timing ON</div>
+          <pre><code><span class="kw">Send:</span>    <span class="val">ATAT1</span>
+<span class="kw">Receive:</span> <span class="resp">OK</span></code></pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-header"><div class="phase-num">2</div><div class="phase-title">Protocol Detection</div></div>
+      <div class="phase-body">
+        <div class="cmd-step">
+          <div class="cmd-step-label">Command 5 — Auto-detect Protocol</div>
+          <pre><code><span class="kw">Send:</span>    <span class="val">ATSP0</span>
+<span class="kw">Receive:</span> <span class="resp">OK</span></code></pre>
+        </div>
+        <div class="cmd-step">
+          <div class="cmd-step-label">Command 6 — Verify Detected Protocol</div>
+          <pre><code><span class="kw">Send:</span>    <span class="val">ATDP</span>
+<span class="kw">Receive:</span> <span class="resp">AUTO, ISO 15765-4 (CAN 11/500)</span></code></pre>
+        </div>
+        <div class="cmd-step">
+          <div class="cmd-step-label">Command 7 — Read Battery Voltage</div>
+          <pre><code><span class="kw">Send:</span>    <span class="val">ATRV</span>
+<span class="kw">Receive:</span> <span class="resp">12.4V</span></code></pre>
+          <div class="callout info" style="margin-top:8px;"><strong>Tip:</strong> If you see <code>0.0V</code> or <code>NO DATA</code>, the adapter is not connected properly to the vehicle.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-header"><div class="phase-num">3</div><div class="phase-title">Vehicle Communication Test</div></div>
+      <div class="phase-body">
+        <div class="cmd-step">
+          <div class="cmd-step-label">Command 8 — Request Supported PIDs</div>
+          <pre><code><span class="kw">Send:</span>    <span class="val">0100</span>
+<span class="kw">Receive:</span> <span class="resp">7E8 06 41 00 BE 3F A8 13</span></code></pre>
+          <div class="callout tip" style="margin-top:8px;"><strong>This is the most important test.</strong> A response here means your vehicle ECU is communicating. <code>NO DATA</code> or <code>UNABLE TO CONNECT</code> → see Troubleshooting.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-header"><div class="phase-num">4</div><div class="phase-title">Read Live Data</div></div>
+      <div class="phase-body">
+        <pre><code><span class="cm">// Engine RPM</span>
+<span class="kw">Send:</span>    <span class="val">010C</span>     <span class="kw">Receive:</span> <span class="resp">7E8 04 41 0C 1A F8</span>
+
+<span class="cm">// Vehicle Speed</span>
+<span class="kw">Send:</span>    <span class="val">010D</span>     <span class="kw">Receive:</span> <span class="resp">7E8 03 41 0D 3C</span>
+
+<span class="cm">// Coolant Temperature</span>
+<span class="kw">Send:</span>    <span class="val">0105</span>     <span class="kw">Receive:</span> <span class="resp">7E8 03 41 05 7B</span>
+
+<span class="cm">// Throttle Position</span>
+<span class="kw">Send:</span>    <span class="val">0111</span>     <span class="kw">Receive:</span> <span class="resp">7E8 03 41 11 64</span></code></pre>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-header"><div class="phase-num">5</div><div class="phase-title">Read Diagnostic Trouble Codes</div></div>
+      <div class="phase-body">
+        <pre><code><span class="cm">// Read stored DTCs</span>
+<span class="kw">Send:</span>    <span class="val">03</span>
+<span class="kw">Receive:</span> <span class="resp">7E8 06 43 01 P0300 00 00</span>   <span class="cm">(fault detected)</span>
+
+<span class="cm">// Or if no faults:</span>
+<span class="kw">Receive:</span> <span class="resp">7E8 02 43 00</span></code></pre>
+        <pre><code><span class="cm">// Clear DTCs — USE WITH CAUTION</span>
+<span class="kw">Send:</span>    <span class="val">04</span>
+<span class="kw">Receive:</span> <span class="resp">7E8 01 44</span></code></pre>
+        <div class="callout danger">⚠️ Clearing DTCs also resets all readiness monitors. The vehicle may fail an emissions test until all monitors complete their drive cycles.</div>
+        <div class="btn-row">
+          <a href="https://b0200.enginefaultcode.com/" target="_blank" class="btn btn-danger">🔍 Search Engine Fault Codes</a>
+          <a href="https://www.scantool.net/scantool/downloads/103/elm327dsh.pdf" target="_blank" class="btn btn-info">📄 ELM327 Full Datasheet</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 7 -->
+  <section id="pid-commands">
+    <h2><span class="sec-num">07</span> OBD2 PID Commands</h2>
+    <p>A command like <code>010C</code> breaks down as: Mode <code>01</code> + PID <code>0C</code>. The ECU replies with mode + 0x40:</p>
+    <pre><code>Request:   <span class="val">01 0C</span>      <span class="cm">→ Mode 01, PID 0C (Engine RPM)</span>
+Response:  <span class="resp">41 0C 1A F8</span>  <span class="cm">→ Positive response, data bytes follow</span>
+<span class="cm">           ── ── ───────</span>
+<span class="cm">           41 = 0x40 + mode 0x01 (positive response)</span>
+<span class="cm">           0C = PID echoed</span>
+<span class="cm">           1A F8 = actual data bytes A, B</span></code></pre>
+
+    <h3>Service Modes Overview</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Mode</th><th>Meaning</th><th>Example</th><th>Returns</th></tr></thead>
+        <tbody>
+          <tr><td><code>01</code></td><td>Live / current data</td><td><code>010C</code></td><td>Real-time ECU values (RPM, speed, temp…)</td></tr>
+          <tr><td><code>02</code></td><td>Freeze frame data</td><td><code>020C</code></td><td>Snapshot captured when fault occurred</td></tr>
+          <tr><td><code>03</code></td><td>Read stored DTCs</td><td><code>03</code></td><td>Trouble codes in ECU memory</td></tr>
+          <tr><td><code>04</code></td><td>Clear DTCs + reset monitors</td><td><code>04</code></td><td>Clears codes and readiness data</td></tr>
+          <tr><td><code>07</code></td><td>Read pending DTCs</td><td><code>07</code></td><td>Faults not yet matured into stored codes</td></tr>
+          <tr><td><code>09</code></td><td>Vehicle information</td><td><code>0902</code></td><td>VIN, ECU name, calibration IDs</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Mode 01 — Live Data PIDs</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Command</th><th>PID</th><th>Description</th><th>Formula</th><th>Unit</th></tr></thead>
+        <tbody>
+          <tr><td><code>0100</code></td><td>00</td><td>Supported PIDs 01–20</td><td>Bitmask</td><td>—</td></tr>
+          <tr><td><code>0104</code></td><td>04</td><td>Calculated engine load</td><td>A × 100/255</td><td>%</td></tr>
+          <tr><td><code>0105</code></td><td>05</td><td>Engine coolant temperature</td><td>A − 40</td><td>°C</td></tr>
+          <tr><td><code>010A</code></td><td>0A</td><td>Fuel pressure</td><td>A × 3</td><td>kPa</td></tr>
+          <tr><td><code>010B</code></td><td>0B</td><td>Intake manifold pressure</td><td>A</td><td>kPa</td></tr>
+          <tr><td><code>010C</code></td><td>0C</td><td>Engine RPM</td><td>(256A + B) / 4</td><td>RPM</td></tr>
+          <tr><td><code>010D</code></td><td>0D</td><td>Vehicle speed</td><td>A</td><td>km/h</td></tr>
+          <tr><td><code>010E</code></td><td>0E</td><td>Timing advance</td><td>A/2 − 64</td><td>°</td></tr>
+          <tr><td><code>010F</code></td><td>0F</td><td>Intake air temperature</td><td>A − 40</td><td>°C</td></tr>
+          <tr><td><code>0110</code></td><td>10</td><td>MAF air flow rate</td><td>(256A + B) / 100</td><td>g/s</td></tr>
+          <tr><td><code>0111</code></td><td>11</td><td>Throttle position</td><td>A × 100/255</td><td>%</td></tr>
+          <tr><td><code>011F</code></td><td>1F</td><td>Run time since engine start</td><td>256A + B</td><td>s</td></tr>
+          <tr><td><code>012F</code></td><td>2F</td><td>Fuel tank level</td><td>A × 100/255</td><td>%</td></tr>
+          <tr><td><code>0133</code></td><td>33</td><td>Barometric pressure</td><td>A</td><td>kPa</td></tr>
+          <tr><td><code>015C</code></td><td>5C</td><td>Engine oil temperature</td><td>A − 40</td><td>°C</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Mode 09 — Vehicle Information</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Command</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>0902</code></td><td>VIN (Vehicle Identification Number) — ASCII decode</td></tr>
+          <tr><td><code>090A</code></td><td>ECU name string</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- SECTION 8 -->
+  <section id="decoding">
+    <h2><span class="sec-num">08</span> Decoding Responses</h2>
+
+    <h3>Response Anatomy (Headers ON — ATH1)</h3>
+    <pre><code>7E8  03  41  0D  3C
+ │    │   │   │   └── Data byte A = 0x3C = 60 decimal
+ │    │   │   └─────── PID echoed (0x0D = Vehicle Speed)
+ │    │   └─────────── Response mode (0x41 = 0x40 + Mode 01)
+ │    └─────────────── Number of following data bytes (3)
+ └──────────────────── CAN ID of responding ECU (0x7E8 = Engine ECU)</code></pre>
+
+    <h3>Example 1 — Engine RPM <code>010C</code></h3>
+    <div class="decode-box">
+      <div class="decode-row"><span class="decode-byte">7E8</span><span class="decode-arrow">→</span><span class="decode-desc">Engine ECU responding</span></div>
+      <div class="decode-row"><span class="decode-byte">04</span><span class="decode-arrow">→</span><span class="decode-desc">4 data bytes follow</span></div>
+      <div class="decode-row"><span class="decode-byte">41</span><span class="decode-arrow">→</span><span class="decode-desc">Mode 01 positive response</span></div>
+      <div class="decode-row"><span class="decode-byte">0C</span><span class="decode-arrow">→</span><span class="decode-desc">PID = RPM confirmed</span></div>
+      <div class="decode-row"><span class="decode-byte">1A F8</span><span class="decode-arrow">→</span><span class="decode-desc">A = 0x1A = 26,  B = 0xF8 = 248</span></div>
+    </div>
+    <pre><code>Formula: RPM = (256 × A + B) / 4
+       = (256 × 26 + 248) / 4
+       = 6904 / 4
+       = <span class="resp">1726 RPM</span></code></pre>
+
+    <h3>Example 2 — Vehicle Speed <code>010D</code></h3>
+    <pre><code>Response: 7E8 03 41 0D <span class="val">3C</span>
+Formula:  Speed = A = 0x3C = 60 decimal = <span class="resp">60 km/h</span></code></pre>
+
+    <h3>Example 3 — Coolant Temperature <code>0105</code></h3>
+    <pre><code>Response: 7E8 03 41 05 <span class="val">7B</span>
+Formula:  Temp = A − 40 = 123 − 40 = <span class="resp">83°C</span></code></pre>
+
+    <h3>Example 4 — Throttle Position <code>0111</code></h3>
+    <pre><code>Response: 7E8 03 41 11 <span class="val">64</span>
+Formula:  Throttle = A × 100 / 255 = 100 × 100 / 255 = <span class="resp">39.2%</span></code></pre>
+
+    <h3>DTC Decoding (Mode 03)</h3>
+    <pre><code>Response: 43 02 <span class="val">03 00</span> <span class="val">01 30</span>
+          ── ──
+          43 = Mode 03 response
+          02 = 2 DTCs stored
+
+DTC byte pair: Hi=0x03, Lo=0x00
+  Top 2 bits of Hi (00) → <span class="resp">P</span> (Powertrain)
+  → <span class="resp">P0300</span> — Random/Multiple Cylinder Misfire
+
+Prefix table:
+  0x0X = P0  (Powertrain, generic)
+  0x4X = C0  (Chassis)
+  0x8X = B0  (Body)
+  0xCX = U0  (Network)</code></pre>
+  </section>
+
+  <!-- SECTION 9 -->
+  <section id="master-sequence">
+    <h2><span class="sec-num">09</span> Master Debug Sequence</h2>
+    <p>Paste these commands in order into Serial Debug Assistant for a complete vehicle health check:</p>
+    <pre><code><span class="val">ATZ</span>      <span class="cm">→ Reset ELM327</span>
+<span class="val">ATE0</span>     <span class="cm">→ Echo off</span>
+<span class="val">ATH1</span>     <span class="cm">→ Show CAN IDs</span>
+<span class="val">ATAT1</span>    <span class="cm">→ Adaptive timing</span>
+<span class="val">ATSP0</span>    <span class="cm">→ Auto-detect protocol</span>
+<span class="val">ATRV</span>     <span class="cm">→ Battery voltage check</span>
+<span class="val">0100</span>     <span class="cm">→ ECU communication test</span>
+<span class="val">010C</span>     <span class="cm">→ Engine RPM</span>
+<span class="val">010D</span>     <span class="cm">→ Vehicle speed</span>
+<span class="val">0105</span>     <span class="cm">→ Coolant temperature</span>
+<span class="val">0111</span>     <span class="cm">→ Throttle position</span>
+<span class="val">012F</span>     <span class="cm">→ Fuel level</span>
+<span class="val">03</span>       <span class="cm">→ Read all DTCs</span></code></pre>
+
+    <h3>Expected Output</h3>
+    <pre><code>ELM327 v1.5
+OK
+OK
+OK
+OK
+<span class="resp">12.4V</span>
+<span class="resp">7E8 06 41 00 BE 3F A8 13</span>
+<span class="resp">7E8 04 41 0C 1A F8</span>        <span class="cm">→ 1726 RPM</span>
+<span class="resp">7E8 03 41 0D 00</span>           <span class="cm">→ 0 km/h (stationary)</span>
+<span class="resp">7E8 03 41 05 7B</span>           <span class="cm">→ 83°C</span>
+<span class="resp">7E8 03 41 11 19</span>           <span class="cm">→ 9.8% throttle</span>
+<span class="resp">7E8 03 41 2F A0</span>           <span class="cm">→ 62.7% fuel</span>
+<span class="resp">7E8 02 43 00</span>              <span class="cm">→ No DTCs</span></code></pre>
+  </section>
+
+  <!-- SECTION 10 -->
+  <section id="troubleshooting">
+    <h2><span class="sec-num">10</span> Troubleshooting</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Problem</th><th>Cause</th><th>Fix</th></tr></thead>
+        <tbody>
+          <tr><td><code>NO DATA</code></td><td>Wrong protocol / ECU not responding</td><td>Try <code>ATSP0</code> to auto-detect; ensure ignition is ON</td></tr>
+          <tr><td><code>UNABLE TO CONNECT</code></td><td>Protocol mismatch</td><td>Try <code>ATZ</code>, then manually set <code>ATSP1</code>–<code>ATSP9</code></td></tr>
+          <tr><td><code>BUS INIT: ERROR</code></td><td>K-Line init failed</td><td>Vehicle may use CAN; try <code>ATSP6</code></td></tr>
+          <tr><td><code>?</code> response</td><td>Unknown AT command</td><td>Check command spelling — no spaces within command</td></tr>
+          <tr><td>No response at all</td><td>Wrong COM port or baud mismatch</td><td>Check Device Manager; try baud 9600 or 115200</td></tr>
+          <tr><td>ELM327 not in Bluetooth scan</td><td>Adapter not powered</td><td>Ignition must be ON when pairing</td></tr>
+          <tr><td>Voltage shows <code>0.0V</code></td><td>Bad OBD port connection</td><td>Re-seat adapter; check OBD port fuse</td></tr>
+          <tr><td>DTC clear doesn't work</td><td>ECU requires physical address</td><td>Try <code>ATSH 7E0</code> then send <code>04</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- QUICK REF -->
+  <section>
+    <h2><span class="sec-num">REF</span> Quick Reference Card</h2>
+    <div class="qref">
+      <div class="qref-col">
+        <div class="qref-title">// AT Commands</div>
+        <div class="qref-row"><span class="qref-cmd">ATZ</span><span class="qref-desc">Reset adapter</span></div>
+        <div class="qref-row"><span class="qref-cmd">ATE0</span><span class="qref-desc">Echo off</span></div>
+        <div class="qref-row"><span class="qref-cmd">ATH1</span><span class="qref-desc">Show headers</span></div>
+        <div class="qref-row"><span class="qref-cmd">ATAT1</span><span class="qref-desc">Adaptive timing</span></div>
+        <div class="qref-row"><span class="qref-cmd">ATSP0</span><span class="qref-desc">Auto protocol</span></div>
+        <div class="qref-row"><span class="qref-cmd">ATRV</span><span class="qref-desc">Battery voltage</span></div>
+        <div class="qref-row"><span class="qref-cmd">ATDP</span><span class="qref-desc">Current protocol</span></div>
+      </div>
+      <div class="qref-col">
+        <div class="qref-title">// OBD PIDs</div>
+        <div class="qref-row"><span class="qref-cmd">0100</span><span class="qref-desc">Supported PIDs + ECU test</span></div>
+        <div class="qref-row"><span class="qref-cmd">010C</span><span class="qref-desc">RPM → (256A+B)/4</span></div>
+        <div class="qref-row"><span class="qref-cmd">010D</span><span class="qref-desc">Speed → A km/h</span></div>
+        <div class="qref-row"><span class="qref-cmd">0105</span><span class="qref-desc">Coolant → A−40°C</span></div>
+        <div class="qref-row"><span class="qref-cmd">0111</span><span class="qref-desc">Throttle → A×100/255%</span></div>
+        <div class="qref-row"><span class="qref-cmd">03</span><span class="qref-desc">Read DTCs</span></div>
+        <div class="qref-row"><span class="qref-cmd">04</span><span class="qref-desc">Clear DTCs</span></div>
+        <div class="qref-row"><span class="qref-cmd">0902</span><span class="qref-desc">Read VIN</span></div>
+      </div>
+    </div>
+    <p style="font-size:0.75rem;color:var(--muted);margin-top:12px;">COM Settings: 38400 baud · 8N1 · No flow control · CR <code>\r</code> terminator</p>
+  </section>
+
+  <footer>
+    <p>ELM327 Mini Bluetooth OBD2 — Windows Serial Debug Assistant Reference</p>
+    <p>Protocol Standards: <span>SAE J1979</span> · <span>ISO 15765-4</span> · <span>ISO 9141-2</span> · <span>ISO 14230-4</span> · <span>SAE J1850</span></p>
+  </footer>
+
+</div>
+</body>
+</html>
